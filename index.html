@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PIE 製程整合科技島 | 地球星球生態與智慧深空星系</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Three.js & OrbitControls & Tween.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Noto+Sans+TC:wght@500;700;900&family=JetBrains+Mono:wght@700;800&display=swap');
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+      background-color: #030712;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .space-glass-panel {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1.5px solid rgba(56, 189, 248, 0.35);
+      box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.7), 0 0 25px rgba(14, 165, 233, 0.2);
+    }
+  </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col relative text-slate-100 bg-[#030712]">
+
+  <!-- 3D WebGL Canvas Container -->
+  <div id="canvas-container" class="absolute inset-0 z-0"></div>
+
+  <!-- 頂部導航資訊列 -->
+  <header class="relative z-10 px-6 py-4 flex items-center justify-between pointer-events-none">
+    <div class="flex items-center gap-4 pointer-events-auto">
+      <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#00A59B] to-[#38BDF8] p-1 shadow-xl flex items-center justify-center text-white border-2 border-cyan-300/50 shadow-cyan-500/30">
+        <i data-lucide="globe-2" class="w-8 h-8 text-white"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="px-3 py-0.5 rounded-full text-xs font-black bg-cyan-950/90 text-cyan-300 tracking-wider mono border border-cyan-400/50">PLANET PIE ARCHIPELAGO</span>
+          <span class="text-sm font-bold text-slate-300 drop-shadow">· Flash 製程整合地球科技星</span>
+        </div>
+        <h1 class="text-3xl font-black text-white tracking-tight flex items-center gap-3 drop-shadow-md mt-0.5">
+          製程整合母星科技島
+          <span class="text-xs font-bold px-3 py-1 bg-emerald-500/25 text-emerald-300 rounded-full mono flex items-center gap-2 border border-emerald-400/50">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            路燈暖光照明中 · 慢速小太陽
+          </span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- 頂部功能區 -->
+    <div class="flex items-center gap-3.5 pointer-events-auto">
+      <!-- 太陽緩速公轉資訊 -->
+      <div class="space-glass-panel px-4 py-2 rounded-2xl flex items-center gap-2.5 text-xs font-bold text-amber-300">
+        <i data-lucide="sun" class="w-4 h-4 text-amber-400 animate-spin" style="animation-duration: 45s;"></i>
+        <span>動態日光：</span>
+        <span id="sun-status" class="mono text-white text-xs">公轉運行中 (慢速3X)</span>
+      </div>
+
+      <!-- 巡檢忙碌人像統計 -->
+      <div class="space-glass-panel px-4 py-2 rounded-2xl flex items-center gap-2.5 text-xs font-bold text-slate-200">
+        <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></div>
+        <span>巡檢忙碌人像：</span>
+        <span class="font-black text-cyan-300 mono text-base">38</span>
+        <span class="text-slate-400">人走動中</span>
+      </div>
+
+      <!-- HITL 審核按鈕 -->
+      <button onclick="toggleHITLModal()" class="space-glass-panel hover:bg-slate-800/90 text-amber-300 font-black px-4 py-2.5 rounded-2xl transition shadow-lg flex items-center gap-2 text-xs border border-amber-400/50">
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+        <span>HITL 專家審核</span>
+        <span class="px-2 py-0.5 rounded-md bg-amber-500/25 text-amber-200 mono font-black text-xs">1</span>
+      </button>
+
+      <!-- 瀏覽器本地下載按鈕 -->
+      <button onclick="downloadWebpage()" class="space-glass-panel hover:bg-slate-800/90 text-cyan-300 font-black px-4 py-2.5 rounded-2xl transition shadow-lg flex items-center gap-2 text-xs border border-cyan-400/50">
+        <i data-lucide="download" class="w-4 h-4"></i>
+        <span>下載 HTML 檔</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 左側浮動面板：各島即時清單 -->
+  <div class="absolute left-6 top-24 z-10 w-80 pointer-events-none space-y-2">
+    <div class="space-glass-panel p-4 rounded-3xl pointer-events-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-700/60 mb-2.5">
+        <div class="flex items-center gap-2 text-sm font-black text-slate-100">
+          <i data-lucide="orbit" class="w-4 h-4 text-cyan-400"></i>
+          <span>7 大島嶼與大字版透明說明看板</span>
+        </div>
+        <span class="text-[11px] text-cyan-300 bg-cyan-950/90 px-2.5 py-0.5 rounded-full mono font-bold border border-cyan-500/40">3X FONT</span>
+      </div>
+      <div id="island-user-roster" class="space-y-1.5 max-h-[380px] overflow-y-auto pr-1 text-xs">
+        <!-- 動態渲染島嶼清單 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 右側抽屜資訊卡：選定島嶼深入分析 -->
+  <aside id="island-drawer" class="absolute right-6 top-24 bottom-8 z-10 w-96 space-glass-panel rounded-3xl p-6 flex flex-col justify-between transition-all duration-500 transform translate-x-[460px] shadow-2xl overflow-hidden border border-cyan-500/50">
+    <div class="overflow-y-auto pr-1 space-y-4">
+      <div class="flex items-start justify-between">
+        <div>
+          <span id="drawer-tag" class="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider mono text-white">TAG</span>
+          <h2 id="drawer-title" class="text-2xl font-black text-white mt-1.5 tracking-tight">島嶼名稱</h2>
+          <p id="drawer-sub" class="text-xs text-slate-400 font-bold">Island Subtitle</p>
+        </div>
+        <button onclick="closeDrawer()" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- 島上現場人像狀態看板 -->
+      <div id="drawer-status-box" class="p-3.5 rounded-2xl border transition bg-slate-900/70">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs font-black flex items-center gap-1.5 text-cyan-300">
+            <i data-lucide="users" class="w-4 h-4 text-cyan-400"></i>
+            現場走動裝忙巡檢人員
+          </span>
+          <span id="drawer-occupancy" class="text-xs font-black mono text-slate-200">0 位巡檢中</span>
+        </div>
+        <div id="drawer-activity-summary" class="text-xs text-slate-300 leading-relaxed font-normal space-y-1">
+          載入中...
+        </div>
+      </div>
+
+      <p id="drawer-desc" class="text-xs text-slate-300 leading-relaxed font-normal">
+        島嶼核心業務描述...
+      </p>
+
+      <!-- 核心模組細項 -->
+      <div class="space-y-2 pt-1">
+        <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="activity" class="w-3.5 h-3.5 text-cyan-400"></i>
+          專責子代理與核心功能
+        </h3>
+        <div id="drawer-modules" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- 底部操作按鈕 -->
+    <div class="pt-4 border-t border-slate-700/60 space-y-2">
+      <button id="drawer-action-btn" onclick="executeIslandAction()" class="w-full py-3.5 px-4 rounded-2xl text-white font-black text-xs tracking-wide transition shadow-lg flex items-center justify-center gap-2">
+        <span>進入該島主控工作台</span>
+        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- 底部導覽船塢 (Dock Bar) -->
+  <footer class="relative z-10 px-6 py-4 flex items-center justify-center pointer-events-none mt-auto">
+    <div class="space-glass-panel p-2 rounded-2xl flex items-center gap-1.5 shadow-2xl pointer-events-auto max-w-full overflow-x-auto">
+      <button onclick="focusIsland('ID00')" id="dock-ID00" class="dock-btn px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-[#00A59B] border border-white/60"></span>
+        <span>ID00 中央館</span>
+      </button>
+      <div class="w-px h-5 bg-slate-700 mx-0.5"></div>
+      <button onclick="focusIsland('ID01')" id="dock-ID01" class="dock-btn px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-[#5D5FEF] border border-white/60"></span>
+        <span>ID01 訓練島</span>
+      </button>
+      <button onclick="focusIsland('ID02')" id="dock-ID02" class="dock-btn px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-[#48BB78] border border-white/60"></span>
+        <span>ID02 解析島</span>
+      </button>
+      <button onclick="focusIsland('ID03')" id="dock-ID03" class="dock-btn px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-[#FF7A00] border border-white/60"></span>
+        <span>ID03 交接島</span>
+      </button>
+      <button onclick="focusIsland('ID04')" id="dock-ID04" class="dock-btn px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-[#0091FF] border border-white/60"></span>
+        <span>ID04 SOP島</span>
+      </button>
+      <button onclick="focusIsland('ID05')" id="dock-ID05" class="dock-btn px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-[#00B4D8] border border-white/60"></span>
+        <span>ID05 數位島</span>
+      </button>
+      <button onclick="focusIsland('ID06')" id="dock-ID06" class="dock-btn px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-[#FFB800] border border-white/60"></span>
+        <span>ID06 獎賞島</span>
+      </button>
+      <div class="w-px h-5 bg-slate-700 mx-0.5"></div>
+      <button onclick="resetCameraView()" class="px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5">
+        <i data-lucide="maximize-2" class="w-4 h-4"></i>
+        <span>全星系俯瞰</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- HITL 專家審查 Modal -->
+  <div id="hitl-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md hidden p-4">
+    <div class="bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-cyan-500/50 text-slate-100">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2 text-amber-400 font-black">
+          <i data-lucide="shield-alert" class="w-5 h-5"></i>
+          <span>HITL 製程處置審核 (Human-in-the-Loop)</span>
+        </div>
+        <button onclick="toggleHITLModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="my-4 space-y-3 text-xs">
+        <div class="bg-amber-950/40 border border-amber-500/40 p-3.5 rounded-2xl text-amber-200 leading-relaxed">
+          <div class="font-black text-amber-300 mb-1 flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+            【異常批次處置審批】Lot #F8392.01 - 3D NAND Channel Hole
+          </div>
+          解析島 Agent 根因分析：Chamber ET03 射頻功率在 HARC 深孔蝕刻時微幅漂移，造成邊緣 Die Vth 偏高。
+        </div>
+
+        <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 mono space-y-2 text-slate-300">
+          <p class="font-bold text-white">審核待核准項目：</p>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" checked class="rounded text-cyan-500" id="c1">
+            <label for="c1">Hold 產線目前正經過 Chamber ET03 之接續 2 個批次</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" checked class="rounded text-cyan-500" id="c2">
+            <label for="c2">自動指派 Wafer #08 前往進行 TEM 截面切片驗證</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" checked class="rounded text-cyan-500" id="c3">
+            <label for="c3">自動擬定 SWR Split 補償工單並同步至交接島晨會清單</label>
+          </div>
+        </div>
+
+        <p class="text-[11px] text-slate-400 italic">
+          遵循晶圓廠物理規則護欄原則：AI Agent 不直接下達停機工單，必須由 PIE 主任工程師簽核確認。
+        </p>
+      </div>
+
+      <div class="flex items-center justify-end gap-2.5 pt-2">
+        <button onclick="submitHITL(false)" class="px-4 py-2 text-xs font-bold text-slate-400 hover:bg-slate-800 rounded-xl transition">
+          退回重新分析
+        </button>
+        <button onclick="submitHITL(true)" class="px-4 py-2 text-xs font-black bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl shadow-md transition">
+          簽核核准並發布處置
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========================================================
+    // 1. 幾何約束：旋轉中心島 30 度使橋樑垂直平整連接到六角形的「邊」
+    // ========================================================
+    // 中央島半徑 R_center = 5.2, 外島半徑 R_outer = 3.9
+    // R_DIST = 11.2，島距 2.1 < (7.8 / 3 = 2.6)，完全符合 < 1/3 直徑約束
+    const R_DIST = 11.2;
+
+    const HEART_COLORS = {
+      cliff: 0xD38E58,      // 陶土橘岩層
+      surfaceGreen: 0x73C785,// 翠綠草皮
+      bridgeWhite: 0xF7FAFC, // 平整純白橋樑
+      
+      // 各島專屬色彩
+      ID00: 0x00A59B,       // Teal 青綠
+      ID01: 0x5D5FEF,       // 活力靛紫
+      ID02: 0x48BB78,       // 亮麗翡翠綠
+      ID03: 0xFF7A00,       // 活力亮橘
+      ID04: 0x0091FF,       // 亮湛藍
+      ID05: 0x00B4D8,       // 數位青藍
+      ID06: 0xFFB800        // 榮譽金黃
+    };
+
+    const angles = {
+      'ID01': -Math.PI / 2,         // 北 (0, -R)
+      'ID02': -Math.PI / 6,         // 東北
+      'ID03': Math.PI / 6,          // 東南
+      'ID04': Math.PI / 2,          // 南
+      'ID05': Math.PI * 5 / 6,      // 西南
+      'ID06': -Math.PI * 5 / 6      // 西北
+    };
+
+    const islandsData = {
+      'ID00': {
+        name: 'ID00 中央館廣場',
+        subName: 'Central Plaza & Supervisor Hub',
+        tag: '總控中樞',
+        colorHex: '#00A59B',
+        threeColor: HEART_COLORS.ID00,
+        pos: { x: 0, z: 0 },
+        desc: '全處神經中樞，負責多 Agent 規劃調度（Plan-and-Solve）與 Human-in-the-Loop 人機審核閘道。代表建築置中。',
+        modules: [
+          { title: 'Supervisor 總協調代理', desc: '自然語言工程任務拆解、跨島狀態派工與即時進度監控。' },
+          { title: 'HITL 專家審核議事堂', desc: '產線關鍵動作（Hold Lot/SWR 工單）真人工程師把關閘道。' },
+          { title: '全域良率健康監控儀表', desc: '即時視覺化全晶圓廠各模組良率爬升與警報統計。' }
+        ],
+        actionText: '開啟中央調度指令台',
+        workers: [
+          { name: 'Dr. Lin (PIE Lead)', role: '總整合主持', currentActivity: '巡檢各島工單中' },
+          { name: 'Agent Supervisor', role: '虛擬總監', currentActivity: '調度解析島算力' },
+          { name: 'Eng. Chen', role: '產線協調員', currentActivity: '往返中央塔確認批次' },
+          { name: 'Eng. Lisa', role: '良率審核員', currentActivity: '手持平板校驗膜厚' }
+        ]
+      },
+      'ID01': {
+        name: 'ID01 訓練島',
+        subName: 'Academy & Enablement Island',
+        tag: '人才賦能',
+        colorHex: '#5D5FEF',
+        threeColor: HEART_COLORS.ID01,
+        pos: { x: R_DIST * Math.cos(angles['ID01']), z: R_DIST * Math.sin(angles['ID01']) },
+        desc: '工程師轉型為「AI Agent 協作者」的賦能基地，提供 Prompt 工程實戰、API 規格拆解與沙盒安全演練。代表建築靠外置於白橋對面。',
+        modules: [
+          { title: 'Prompt 工坊與技能教室', desc: '學習精準給予製程 Context 與工程規格約束。' },
+          { title: '歷史異常模擬沙盒', desc: '重現歷史 HARC 蝕刻未穿典型事故，演練 Agent 排錯流。' },
+          { title: 'LLM Eval 黃金評測所', desc: '維護 Ground Truth 題庫，校驗模型回答的半導體物理精準度。' }
+        ],
+        actionText: '進入工程師訓練沙盒',
+        workers: [
+          { name: 'Eng. David', role: '新進工程師', currentActivity: '沙盒模擬操作演習中' },
+          { name: 'Dr. Sophia', role: 'AI 培訓導師', currentActivity: '指導 RAG 檢索語法' },
+          { name: 'Eng. Ray', role: '種子工程師', currentActivity: '走動偵錯 API 節點' }
+        ]
+      },
+      'ID02': {
+        name: 'ID02 解析島',
+        subName: 'Analytics & RCA Archipelago',
+        tag: '異常診斷',
+        colorHex: '#48BB78',
+        threeColor: HEART_COLORS.ID02,
+        pos: { x: R_DIST * Math.cos(angles['ID02']), z: R_DIST * Math.sin(angles['ID02']) },
+        desc: '異常根因分析（RCA）作戰中心，結合電性參數箱型圖、晶圓圖（Wafer Map）CV 分類與機台共通性矩陣。代表建築靠外置於白橋對面。',
+        modules: [
+          { title: 'WAT/CP 電性特徵雷達', desc: '自動計算 Vth、Leakage、Breakdown 偏移顯著性與趨勢。' },
+          { title: 'Wafer Map CV 特徵辨識所', desc: 'AI 電腦視覺自動歸類 Ring、Edge、Scratch、Zone 空間圖紋。' },
+          { title: '機台共通性矩陣塔 (Commonality)', desc: '交叉比對 Chamber、Recipe 變異，收斂 Top 3 可疑機台。' },
+          { title: 'HARC 缺陷垂直疊加觀測台', desc: '串連光學缺陷座標與 FDC 波形，推薦 FIB/TEM 切片名單。' }
+        ],
+        actionText: '啟動批次異常快速 RCA',
+        workers: [
+          { name: 'Eng. Kevin (Defect)', role: '缺陷分析師', currentActivity: '巡檢 HARC 截面切片' },
+          { name: 'Eng. Megan (WAT)', role: '電性分析師', currentActivity: '在雷達站與終端間走動' },
+          { name: 'Commonality Agent', role: '機台比對代理', currentActivity: '遍歷 128 組機台矩陣' },
+          { name: 'Eng. Alex', role: '模組對齊工程師', currentActivity: '標註 Wafer Map 邊緣' },
+          { name: 'Eng. Sarah', role: '計量分析員', currentActivity: '核對 CD-SEM 趨勢' }
+        ]
+      },
+      'ID03': {
+        name: 'ID03 交接島',
+        subName: 'Handover & Shift Station',
+        tag: '交接報告',
+        colorHex: '#FF7A00',
+        threeColor: HEART_COLORS.ID03,
+        pos: { x: R_DIST * Math.cos(angles['ID03']), z: R_DIST * Math.sin(angles['ID03']) },
+        desc: '消弭日夜輪班資訊斷層與跨模組溝通壁壘，自動彙整晨會簡報與關鍵 Lot 跟蹤日誌。建築物坐落於連接橋反方向外緣。',
+        modules: [
+          { title: '晨會一鍵簡報亭 (One-Click 8D/PPT)', desc: '自動撈取異常圖表與分析結論，秒級產出標準晨會 PPT。' },
+          { title: '結構化交接日誌流 (Shift Log)', desc: '自動抓取追蹤中的 Critical Lot 與機台狀態，記錄交接決策。' },
+          { title: '跨模組對齊空橋 (Etch/ThinFilm/CMP)', desc: '即時推播改善建議至各 Module，達成橫向快速對齊。' }
+        ],
+        actionText: '一鍵匯出今日晨會 8D 簡報',
+        workers: [
+          { name: 'Eng. Tony (Day Shift)', role: '日班交接代表', currentActivity: '巡視晨會大屏與排版' },
+          { name: 'Eng. Eric (Night Shift)', role: '夜班負責人', currentActivity: '交接日誌錄入巡視' },
+          { name: 'Eng. Zoe', role: '模組聯絡人', currentActivity: '走動確認 SWR 膜厚補償' }
+        ]
+      },
+      'ID04': {
+        name: 'ID04 SOP島',
+        subName: 'Standard & Knowledge Vault',
+        tag: '知識防護',
+        colorHex: '#0091FF',
+        threeColor: HEART_COLORS.ID04,
+        pos: { x: R_DIST * Math.cos(angles['ID04']), z: R_DIST * Math.sin(angles['ID04']) },
+        desc: '晶圓廠歷史工程經驗沉澱聖殿，具備向量資料庫檢索（RAG）與嚴格的半導體物理規則護欄防護機制。',
+        modules: [
+          { title: '歷史 8D / SWR 向量檔案庫 (RAG)', desc: '自然語言秒級調閱 3 年內類似問題處置記錄與驗證工單。' },
+          { title: '半導體物理與工程護欄 (Guardrails)', desc: '校驗輸出合理性（膜厚非負、熱預算物理方向），嚴防幻覺。' },
+          { title: '動態 SOP 與經驗傳承坊', desc: '新機台引進與工藝演進時，動態維護標準作業手冊。' }
+        ],
+        actionText: '檢索歷史 SWR 驗證工單庫',
+        workers: [
+          { name: 'Eng. Wayne', role: '知識庫管理員', currentActivity: '查對方碑物理規則庫' },
+          { name: 'Knowledge Agent', role: '向量檢索代理', currentActivity: '在方碑間巡檢索引' },
+          { name: 'Dr. Frank', role: '資深物理顧問', currentActivity: '走動審查熱預算極限' }
+        ]
+      },
+      'ID05': {
+        name: 'ID05 數位島',
+        subName: 'Digital Foundry & Data Lake',
+        tag: '資料底座',
+        colorHex: '#00B4D8',
+        threeColor: HEART_COLORS.ID05,
+        pos: { x: R_DIST * Math.cos(angles['ID05']), z: R_DIST * Math.sin(angles['ID05']) },
+        desc: '匯聚晶圓廠核心巨量資料底座，封裝 Commonality 等分析為高效 Microservice API，並實施嚴格 RBAC 資安控管。',
+        modules: [
+          { title: '五大資料流整合艙', desc: '串接 MES、WAT/CP、Metrology、Defect DB 及 FDC 機台感測器。' },
+          { title: '標準化 Microservice API 碼頭', desc: '封裝 Commonality 等重負載演算法，避免資料庫查詢超時。' },
+          { title: '地端 RBAC 角色資安堡壘', desc: '嚴格控管機密料號與配方存取權，完整記錄審計軌跡 (Audit Log)。' }
+        ],
+        actionText: '監看資料管線 API 負載',
+        workers: [
+          { name: 'Eng. Sean (CIM/IT)', role: '資料架構師', currentActivity: '伺服器機櫃間巡檢波形' },
+          { name: 'Eng. Jerry', role: 'API 研發主管', currentActivity: '監看 API 吞吐量' },
+          { name: 'Security Guard Agent', role: '資安審計代理', currentActivity: '巡檢資料堡壘金鑰' },
+          { name: 'Eng. Alice', role: '管線維護員', currentActivity: '走動排解佇列' }
+        ]
+      },
+      'ID06': {
+        name: 'ID06 獎賞島',
+        subName: 'Incentive & Value Showcase',
+        tag: '價值量化',
+        colorHex: '#FFB800',
+        threeColor: HEART_COLORS.ID06,
+        pos: { x: R_DIST * Math.cos(angles['ID06']), z: R_DIST * Math.sin(angles['ID06']) },
+        desc: '量化 AI 落地效益，表彰人機協作成果，建立工程師「按讚/倒讚與修正標註」的 RLHF 閉環反饋激勵制度。',
+        modules: [
+          { title: 'ROI 效益榮譽榜', desc: '即時視覺化全處累積節省排錯工時、CT 縮短與良率攀升數據。' },
+          { title: 'RLHF 工程反饋積分台', desc: '對 Agent 答案進行修正與反饋標註，累積工程師點數與榮譽。' },
+          { title: '創新題目孵化提案所', desc: '第一線工程師自發提報痛點題目，共同票選優先開發清單。' }
+        ],
+        actionText: '登入 RLHF 貢獻回饋中心',
+        workers: [
+          { name: 'Eng. Jessica', role: 'PIE 提案工程師', currentActivity: '水晶基座前提案演練' },
+          { name: 'Eng. Howard', role: 'RLHF 標註先鋒', currentActivity: '走動標註異常回饋' },
+          { name: 'Value Metric Agent', role: '效益統計代理', currentActivity: '統計本月節省工時' }
+        ]
+      }
+    };
+
+    // ========================================================
+    // 2. Three.js 場景建構
+    // ========================================================
+    let scene, camera, renderer, controls;
+    let islandMeshes = {};
+    let infoBoxes = [];
+    let earthMesh, earthClouds;
+    let humanGroup = new THREE.Group();
+    let currentSelectedId = 'ID00';
+    let clock = new THREE.Clock();
+
+    // 動態小太陽（速度放慢 3 倍）
+    let sunMesh, sunLight, sunGlowRing;
+    let sunOrbitRadius = 26.0;
+    let sunOrbitSpeed = 0.11; // 原 0.35 ➔ 放慢 3 倍至 0.11
+
+    const walkingWorkers = [];
+
+    function initThree() {
+      const container = document.getElementById('canvas-container');
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x030712);
+      scene.fog = new THREE.FogExp2(0x030712, 0.007);
+
+      camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1000);
+      camera.position.set(0, 28, 32);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.35; // 增強整體明亮通透感
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxPolarAngle = Math.PI / 2 - 0.04;
+      controls.minDistance = 8;
+      controls.maxDistance = 80;
+      controls.target.set(0, 1.2, 0);
+
+      // 環境天光（拉高整體亮度，使島嶼舒適明亮）
+      const ambientLight = new THREE.AmbientLight(0x7397b8, 0.88);
+      scene.add(ambientLight);
+
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e3a5f, 0.65);
+      scene.add(hemiLight);
+
+      // 1. 星空背景
+      createSpaceStarfield();
+
+      // 2. 建立類似地球的蔚藍星球載體
+      createEarthPlanet();
+
+      // 3. 建立放慢 3 倍的小太陽
+      createDynamicSlowSun();
+
+      // 4. 建立 7 大蜂巢島嶼（中心島旋轉 30 度使其「邊」朝向橋樑）
+      createAllIslands();
+
+      // 5. 建立平穩連接到「邊」的純白橋樑（無突起、平齊連至中心島邊緣）
+      createEdgeConnectedBridges();
+
+      // 6. 為每個島嶼頭頂建立「放大 3 倍大字版」透明說明方塊
+      createEnlargedInfoBoxes();
+
+      // 7. 生成走動巡檢裝忙工程師
+      scene.add(humanGroup);
+      spawnWalkingWorkers();
+
+      window.addEventListener('resize', onWindowResize);
+      renderer.domElement.addEventListener('pointerdown', onPointerDown);
+
+      updateRosterUI();
+      focusIsland('ID00', false);
+
+      animate();
+    }
+
+    // 星塵粒子
+    function createSpaceStarfield() {
+      const starGeo = new THREE.BufferGeometry();
+      const count = 1600;
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+
+      for (let i = 0; i < count; i++) {
+        const u = Math.random();
+        const v = Math.random();
+        const theta = u * 2.0 * Math.PI;
+        const phi = Math.acos(2.0 * v - 1.0);
+        const r = 90 + Math.random() * 70;
+
+        positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        positions[i * 3 + 2] = r * Math.cos(phi);
+
+        const c = Math.random();
+        colors[i * 3] = 0.85 + c * 0.15;
+        colors[i * 3 + 1] = 0.9 + c * 0.1;
+        colors[i * 3 + 2] = 1.0;
+      }
+
+      starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      starGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const starMat = new THREE.PointsMaterial({ size: 0.95, vertexColors: true, transparent: true, opacity: 0.85 });
+      scene.add(new THREE.Points(starGeo, starMat));
+    }
+
+    // 建立類似地球的母星星球底盤
+    function createEarthPlanet() {
+      const earthRadius = 65;
+      const earthCenterY = -66.5; // 地表剛好在 Y = -1.5 附近承托島嶼
+
+      // 地球球體
+      const earthGeo = new THREE.SphereGeometry(earthRadius, 48, 48);
+      
+      // 程序化海洋與陸地綠洲貼圖
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      // 蔚藍深海
+      ctx.fillStyle = '#0f4c81';
+      ctx.fillRect(0, 0, 1024, 512);
+      // 大陸綠洲區塊
+      ctx.fillStyle = '#1b7a4b';
+      for (let i = 0; i < 24; i++) {
+        const x = (i * 97) % 1024;
+        const y = 80 + (i * 37) % 350;
+        ctx.beginPath();
+        ctx.arc(x, y, 40 + (i % 5) * 15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // 白色大氣雲層漩渦
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+      for (let j = 0; j < 30; j++) {
+        const cx = (j * 131) % 1024;
+        const cy = 40 + (j * 43) % 430;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, 60, 15, Math.PI / 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const earthTex = new THREE.CanvasTexture(canvas);
+      const earthMat = new THREE.MeshStandardMaterial({
+        map: earthTex,
+        roughness: 0.45,
+        metalness: 0.1
+      });
+
+      earthMesh = new THREE.Mesh(earthGeo, earthMat);
+      earthMesh.position.set(0, earthCenterY, 0);
+      earthMesh.receiveShadow = true;
+      scene.add(earthMesh);
+
+      // 大氣層發光薄暈
+      const atmoGeo = new THREE.SphereGeometry(earthRadius + 1.2, 32, 32);
+      const atmoMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.12,
+        side: THREE.BackSide
+      });
+      const atmo = new THREE.Mesh(atmoGeo, atmoMat);
+      atmo.position.set(0, earthCenterY, 0);
+      scene.add(atmo);
+    }
+
+    // 慢速 3 倍的小太陽
+    function createDynamicSlowSun() {
+      const sunGroup = new THREE.Group();
+
+      const sunGeo = new THREE.SphereGeometry(1.3, 24, 24);
+      const sunMat = new THREE.MeshBasicMaterial({ color: 0xFFF2B2 });
+      sunMesh = new THREE.Mesh(sunGeo, sunMat);
+      sunGroup.add(sunMesh);
+
+      const coronaGeo = new THREE.RingGeometry(1.4, 2.2, 32);
+      const coronaMat = new THREE.MeshBasicMaterial({ color: 0xFFA000, side: THREE.DoubleSide, transparent: true, opacity: 0.55 });
+      sunGlowRing = new THREE.Mesh(coronaGeo, coronaMat);
+      sunGroup.add(sunGlowRing);
+
+      sunLight = new THREE.DirectionalLight(0xfff7e6, 1.5);
+      sunLight.castShadow = true;
+      sunLight.shadow.mapSize.width = 2048;
+      sunLight.shadow.mapSize.height = 2048;
+      sunLight.shadow.camera.near = 5;
+      sunLight.shadow.camera.far = 75;
+      const d = 20;
+      sunLight.shadow.camera.left = -d;
+      sunLight.shadow.camera.right = d;
+      sunLight.shadow.camera.top = d;
+      sunLight.shadow.camera.bottom = -d;
+      sunLight.shadow.bias = -0.0003;
+      sunGroup.add(sunLight);
+
+      scene.add(sunGroup);
+      sunMesh.parentGroup = sunGroup;
+    }
+
+    // 建立 7 大蜂巢島嶼與溫暖路燈
+    function createAllIslands() {
+      Object.keys(islandsData).forEach(id => {
+        const data = islandsData[id];
+        const isCenter = (id === 'ID00');
+        const radius = isCenter ? 5.2 : 3.9;
+        const height = isCenter ? 3.4 : 2.8;
+
+        const islandGroup = new THREE.Group();
+        islandGroup.position.set(data.pos.x, 0, data.pos.z);
+        islandGroup.userData = { id: id };
+
+        // 旋轉六角柱：中心島特意旋轉 30 度（Math.PI / 6），確保正 6 邊形之「面/邊」正好朝向正北、正南、東北、東南、西北、西南！
+        const baseRotY = isCenter ? (Math.PI / 6) : 0;
+
+        // 1. 六角陶土橘基座
+        const cliffGeo = new THREE.CylinderGeometry(radius, radius * 0.92, height, 6);
+        const cliffMat = new THREE.MeshStandardMaterial({ color: HEART_COLORS.cliff, roughness: 0.75, flatShading: true });
+        const cliff = new THREE.Mesh(cliffGeo, cliffMat);
+        cliff.rotation.y = baseRotY;
+        cliff.position.y = height / 2 - 1.2;
+        cliff.castShadow = true;
+        cliff.receiveShadow = true;
+        islandGroup.add(cliff);
+
+        // 2. 六角草皮地表
+        const topGeo = new THREE.CylinderGeometry(radius * 0.99, radius * 0.99, 0.38, 6);
+        const topMat = new THREE.MeshStandardMaterial({
+          color: isCenter ? 0xE6F8F6 : HEART_COLORS.surfaceGreen,
+          roughness: 0.6,
+          flatShading: true
+        });
+        const topMesh = new THREE.Mesh(topGeo, topMat);
+        topMesh.rotation.y = baseRotY;
+        topMesh.position.y = height - 1.2 + 0.19;
+        topMesh.receiveShadow = true;
+        islandGroup.add(topMesh);
+
+        // 3. 各島色彩裝飾飾環
+        const borderGeo = new THREE.RingGeometry(radius * 0.92, radius * 0.99, 6);
+        const borderMat = new THREE.MeshBasicMaterial({ color: data.threeColor, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
+        const border = new THREE.Mesh(borderGeo, borderMat);
+        border.rotation.x = -Math.PI / 2;
+        border.rotation.z = baseRotY;
+        border.position.y = height - 1.2 + 0.39;
+        islandGroup.add(border);
+
+        // 4. 島嶼代表建築物
+        const surfaceY = height - 1.2 + 0.38;
+        createIslandArchitecture(id, islandGroup, surfaceY, radius);
+
+        // 5. 設計小路燈（Street Lamps）讓島嶼明亮舒適溫暖
+        createIslandStreetLamps(id, islandGroup, surfaceY, radius);
+
+        scene.add(islandGroup);
+        islandMeshes[id] = islandGroup;
+      });
+    }
+
+    // 建立小路燈：自發光暖黃燈泡 + 點光源柔光照明
+    function createIslandStreetLamps(islandId, group, surfaceY, radius) {
+      const lampCount = (islandId === 'ID00') ? 6 : 4;
+      const lampRadius = radius * 0.75;
+
+      for (let i = 0; i < lampCount; i++) {
+        const theta = (i / lampCount) * Math.PI * 2 + 0.3;
+        const lx = Math.cos(theta) * lampRadius;
+        const lz = Math.sin(theta) * lampRadius;
+
+        const lampGroup = new THREE.Group();
+        lampGroup.position.set(lx, surfaceY, lz);
+
+        // 黑色金屬細燈桿
+        const poleGeo = new THREE.CylinderGeometry(0.04, 0.05, 1.1, 6);
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+        const pole = new THREE.Mesh(poleGeo, poleMat);
+        pole.position.y = 0.55;
+        lampGroup.add(pole);
+
+        // 暖黃自發光燈罩燈泡
+        const bulbGeo = new THREE.SphereGeometry(0.12, 12, 12);
+        const bulbMat = new THREE.MeshBasicMaterial({ color: 0xFFE082 });
+        const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+        bulb.position.y = 1.15;
+        lampGroup.add(bulb);
+
+        // 燈頭遮光金屬罩
+        const capGeo = new THREE.ConeGeometry(0.22, 0.08, 8);
+        const capMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+        const cap = new THREE.Mesh(capGeo, capMat);
+        cap.position.y = 1.22;
+        lampGroup.add(cap);
+
+        // 柔和暖黃點光源（點亮周圍地面與工程師，解決過暗問題）
+        const lampLight = new THREE.PointLight(0xffdf80, 0.45, 4.5, 1.8);
+        lampLight.position.y = 1.1;
+        lampGroup.add(lampLight);
+
+        group.add(lampGroup);
+      }
+    }
+
+    // 建立島嶼代表建築物
+    function createIslandArchitecture(id, group, surfaceY, radius) {
+      const data = islandsData[id];
+      const archMat = new THREE.MeshStandardMaterial({ color: data.threeColor, roughness: 0.35, metalness: 0.15, flatShading: true });
+      const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35, flatShading: true });
+
+      if (id === 'ID00') {
+        const domeGeo = new THREE.SphereGeometry(2.1, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.5);
+        const dome = new THREE.Mesh(domeGeo, archMat);
+        dome.position.set(0, surfaceY, 0);
+        dome.castShadow = true;
+        group.add(dome);
+
+        const baseRingGeo = new THREE.CylinderGeometry(2.3, 2.4, 0.4, 16);
+        const baseRing = new THREE.Mesh(baseRingGeo, whiteMat);
+        baseRing.position.set(0, surfaceY + 0.2, 0);
+        baseRing.castShadow = true;
+        group.add(baseRing);
+
+        const ringGeo = new THREE.TorusGeometry(3.0, 0.08, 8, 32);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0xFFD027, transparent: true, opacity: 0.95 });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2.3;
+        ring.position.set(0, surfaceY + 1.9, 0);
+        group.add(ring);
+        group.userData.spinRing = ring;
+        return;
+      }
+
+      const dir = new THREE.Vector2(data.pos.x, data.pos.z).normalize();
+      const offsetDist = radius * 0.54;
+      const bx = dir.x * offsetDist;
+      const bz = dir.y * offsetDist;
+
+      const archGroup = new THREE.Group();
+      archGroup.position.set(bx, surfaceY, bz);
+
+      if (id === 'ID01') {
+        const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.0, 1.0), whiteMat);
+        body.position.y = 1.0;
+        body.castShadow = true;
+        archGroup.add(body);
+
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(1.2, 0.9, 4), archMat);
+        roof.position.y = 2.45;
+        roof.rotation.y = Math.PI / 4;
+        roof.castShadow = true;
+        archGroup.add(roof);
+
+      } else if (id === 'ID02') {
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.18, 2.2, 8), whiteMat);
+        pole.position.y = 1.1;
+        pole.castShadow = true;
+        archGroup.add(pole);
+
+        const dish = new THREE.Mesh(new THREE.ConeGeometry(1.3, 0.5, 12, 1, true), archMat);
+        dish.position.y = 2.3;
+        dish.rotation.x = Math.PI * 0.75;
+        dish.castShadow = true;
+        archGroup.add(dish);
+        group.userData.radar = dish;
+
+      } else if (id === 'ID03') {
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.5, 0.32), whiteMat);
+        frame.position.y = 1.2;
+        frame.castShadow = true;
+        archGroup.add(frame);
+
+        const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 1.2), new THREE.MeshStandardMaterial({ color: data.threeColor, roughness: 0.2 }));
+        screen.position.set(0, 1.2, 0.17);
+        archGroup.add(screen);
+
+      } else if (id === 'ID04') {
+        for (let i = 0; i < 3; i++) {
+          const m = new THREE.Mesh(new THREE.BoxGeometry(0.48, 1.3 + i * 0.45, 0.32), archMat);
+          m.position.set(-0.65 + i * 0.65, (1.3 + i * 0.45) / 2, 0);
+          m.castShadow = true;
+          archGroup.add(m);
+        }
+
+      } else if (id === 'ID05') {
+        for (let x = -1; x <= 1; x += 2) {
+          const s = new THREE.Mesh(new THREE.BoxGeometry(0.65, 2.2, 0.65), archMat);
+          s.position.set(x * 0.5, 1.1, 0);
+          s.castShadow = true;
+          archGroup.add(s);
+
+          const cap = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.14, 0.7), whiteMat);
+          cap.position.set(x * 0.5, 2.27, 0);
+          archGroup.add(cap);
+        }
+
+      } else if (id === 'ID06') {
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.95, 0.7, 6), whiteMat);
+        base.position.y = 0.35;
+        base.castShadow = true;
+        archGroup.add(base);
+
+        const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(1.0, 0), archMat);
+        crystal.position.y = 1.75;
+        crystal.castShadow = true;
+        archGroup.add(crystal);
+        group.userData.crystal = crystal;
+      }
+
+      archGroup.rotation.y = -Math.atan2(dir.y, dir.x) + Math.PI / 2;
+      group.add(archGroup);
+    }
+
+    // ========================================================
+    // 3. 連接至中心島「邊」（絕不連到角）的純白平整橋樑
+    // ========================================================
+    function createEdgeConnectedBridges() {
+      const bridgeMat = new THREE.MeshStandardMaterial({ color: HEART_COLORS.bridgeWhite, roughness: 0.35, flatShading: true });
+      const railMat = new THREE.MeshStandardMaterial({ color: 0xE2E8F0, roughness: 0.4 });
+
+      // 正六邊形在旋轉 30 度後，其正邊心距（Apothem）為 R * cos(30°) = 5.2 * 0.866 = 4.50
+      // 橋梁起點直接精準對接在正邊的中央直線中點，平順平齊，無突起！
+      const centerApothem = 5.2 * Math.cos(Math.PI / 6); // 4.5038
+      const outerRadius = 3.9;
+
+      ['ID01', 'ID02', 'ID03', 'ID04', 'ID05', 'ID06'].forEach(id => {
+        const d = islandsData[id];
+        const dir = new THREE.Vector3(d.pos.x, 0, d.pos.z).normalize();
+
+        // 橋梁端點貼齊中心島邊心處
+        const pStart = new THREE.Vector3().copy(dir).multiplyScalar(centerApothem * 0.99);
+        pStart.y = 2.36; // 平整平齊於中心地表
+
+        const pEnd = new THREE.Vector3(d.pos.x, 0, d.pos.z).sub(new THREE.Vector3().copy(dir).multiplyScalar(outerRadius * 0.98));
+        pEnd.y = 1.76;   // 平整平齊於外島地表
+
+        const bridgeVec = new THREE.Vector3().subVectors(pEnd, pStart);
+        const bridgeLen = bridgeVec.length();
+        const bridgeMid = new THREE.Vector3().addVectors(pStart, pEnd).multiplyScalar(0.5);
+
+        // 平整平直斜度，不額外隆起
+        const bridgeGeo = new THREE.BoxGeometry(1.3, 0.16, bridgeLen);
+        const bridge = new THREE.Mesh(bridgeGeo, bridgeMat);
+        bridge.position.copy(bridgeMid);
+        bridge.lookAt(pEnd);
+        bridge.castShadow = true;
+        bridge.receiveShadow = true;
+        scene.add(bridge);
+
+        // 兩側平直白色安全低護欄
+        [-0.58, 0.58].forEach(xOff => {
+          const railGeo = new THREE.BoxGeometry(0.08, 0.22, bridgeLen);
+          const rail = new THREE.Mesh(railGeo, railMat);
+          rail.position.set(xOff, 0.14, 0);
+          bridge.add(rail);
+        });
+      });
+    }
+
+    // ========================================================
+    // 4. 頭頂「放大 3 倍大字版」透明可點擊說明看板 (Clear 3X Canvas)
+    // ========================================================
+    function createEnlargedInfoBoxes() {
+      Object.keys(islandsData).forEach(id => {
+        const d = islandsData[id];
+        const isCenter = (id === 'ID00');
+        const boxHeight = isCenter ? 7.6 : 6.4;
+
+        const boxGroup = new THREE.Group();
+        boxGroup.position.set(d.pos.x, boxHeight, d.pos.z);
+        boxGroup.userData = { isInfoBox: true, islandId: id };
+
+        // 增大 3D 浮動方塊尺度，以舒適承載大 3 倍的字體
+        const glassGeo = new THREE.BoxGeometry(3.6, 1.45, 0.4);
+        const glassMat = new THREE.MeshPhysicalMaterial({
+          color: d.threeColor,
+          transparent: true,
+          opacity: 0.78,
+          roughness: 0.1,
+          transmission: 0.65,
+          metalness: 0.15,
+          reflectivity: 0.9
+        });
+        const glassMesh = new THREE.Mesh(glassGeo, glassMat);
+        glassMesh.userData = { isInfoBox: true, islandId: id };
+        boxGroup.add(glassMesh);
+
+        // 俐落外邊發光白框
+        const edgesGeo = new THREE.EdgesGeometry(glassGeo);
+        const edgesMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
+        boxGroup.add(new THREE.LineSegments(edgesGeo, edgesMat));
+
+        // 2048 x 800 高解析度 Canvas，字體直接放大 3 倍
+        const canvas = document.createElement('canvas');
+        canvas.width = 1024;
+        canvas.height = 420;
+        const ctx = canvas.getContext('2d');
+
+        // 背景深色圓角卡片
+        ctx.fillStyle = 'rgba(8, 14, 28, 0.92)';
+        ctx.roundRect(16, 16, 992, 388, 36);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 10;
+        ctx.stroke();
+
+        // 標題字體：超大 3 倍字（84px）
+        ctx.fillStyle = d.colorHex;
+        ctx.font = '900 84px "Plus Jakarta Sans", "Noto Sans TC", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(d.name.split(' ')[0], 512, 145);
+
+        // 功能標籤：超大 3 倍字（104px）
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 104px "Noto Sans TC", sans-serif';
+        ctx.fillText(d.tag + ' ➔', 512, 295);
+
+        const textTexture = new THREE.CanvasTexture(canvas);
+        const textMat = new THREE.MeshBasicMaterial({ map: textTexture, transparent: true });
+        const textPlaneGeo = new THREE.PlaneGeometry(3.55, 1.4);
+
+        const frontText = new THREE.Mesh(textPlaneGeo, textMat);
+        frontText.position.z = 0.21;
+        boxGroup.add(frontText);
+
+        const backText = new THREE.Mesh(textPlaneGeo, textMat);
+        backText.position.z = -0.21;
+        backText.rotation.y = Math.PI;
+        boxGroup.add(backText);
+
+        scene.add(boxGroup);
+        infoBoxes.push(boxGroup);
+      });
+    }
+
+    // ========================================================
+    // 5. 巡檢走動裝忙工程師人偶 (Walking & Pacing Animation)
+    // ========================================================
+    function createWalkingEngineer(worker, islandId) {
+      const human = new THREE.Group();
+      const suitMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, flatShading: true });
+      const bootMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
+      const visorMat = new THREE.MeshStandardMaterial({ color: 0x00A59B, metalness: 0.7, roughness: 0.2 });
+
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.62, 0.3), suitMat);
+      body.position.y = 0.88;
+      body.castShadow = true;
+      human.add(body);
+
+      const badge = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.14, 0.04), new THREE.MeshBasicMaterial({ color: islandsData[islandId].threeColor }));
+      badge.position.set(0.12, 0.9, 0.16);
+      human.add(badge);
+
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.36, 0.36), suitMat);
+      head.position.y = 1.42;
+      head.castShadow = true;
+      human.add(head);
+
+      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.11, 0.08), visorMat);
+      visor.position.set(0, 1.44, 0.18);
+      human.add(visor);
+
+      const legGeo = new THREE.BoxGeometry(0.15, 0.52, 0.18);
+      const lLeg = new THREE.Mesh(legGeo, suitMat);
+      lLeg.position.set(-0.13, 0.32, 0);
+      human.add(lLeg);
+
+      const rLeg = new THREE.Mesh(legGeo, suitMat);
+      rLeg.position.set(0.13, 0.32, 0);
+      human.add(rLeg);
+
+      const armGeo = new THREE.BoxGeometry(0.11, 0.48, 0.11);
+      const lArm = new THREE.Mesh(armGeo, suitMat);
+      const rArm = new THREE.Mesh(armGeo, suitMat);
+      lArm.position.set(-0.3, 0.9, 0);
+      rArm.position.set(0.3, 0.9, 0);
+      human.add(lArm);
+      human.add(rArm);
+
+      // 手持行動智慧量測晶圓平板
+      const pad = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.03, 0.24), new THREE.MeshStandardMaterial({ color: islandsData[islandId].threeColor, roughness: 0.2 }));
+      pad.position.set(0.14, 0.9, 0.24);
+      pad.rotation.x = -Math.PI / 4;
+      human.add(pad);
+
+      const halo = new THREE.Mesh(new THREE.RingGeometry(0.16, 0.22, 12), new THREE.MeshBasicMaterial({ color: islandsData[islandId].threeColor, side: THREE.DoubleSide, transparent: true, opacity: 0.85 }));
+      halo.rotation.x = -Math.PI / 2;
+      halo.position.y = 1.8;
+      human.add(halo);
+
+      human.scale.set(0.8, 0.8, 0.8);
+      return { mesh: human, lLeg, rLeg, lArm, rArm, head, halo };
+    }
+
+    function spawnWalkingWorkers() {
+      Object.keys(islandsData).forEach(id => {
+        const island = islandsData[id];
+        const isCenter = (id === 'ID00');
+        const surfaceY = isCenter ? (3.4 - 1.2 + 0.38) : (2.8 - 1.2 + 0.38);
+        const radius = isCenter ? 3.4 : 2.4;
+
+        island.workers.forEach((w, idx) => {
+          const eng = createWalkingEngineer(w, id);
+          humanGroup.add(eng.mesh);
+
+          const patrolRadius = radius * (0.35 + (idx % 3) * 0.22);
+          const patrolSpeed = 0.35 + Math.random() * 0.25;
+          const startAngle = (idx / island.workers.length) * Math.PI * 2;
+          const clockwise = (idx % 2 === 0) ? 1 : -1;
+
+          walkingWorkers.push({
+            ...eng,
+            islandId: id,
+            workerData: w,
+            centerX: island.pos.x,
+            centerZ: island.pos.z,
+            surfaceY: surfaceY,
+            patrolRadius: patrolRadius,
+            patrolSpeed: patrolSpeed,
+            angle: startAngle,
+            clockwise: clockwise,
+            walkSeed: Math.random() * 10
+          });
+        });
+      });
+    }
+
+    // ========================================================
+    // 6. 點擊偵測與鏡頭平滑過渡
+    // ========================================================
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    function onPointerDown(event) {
+      if (event.clientX > window.innerWidth - 460 && !document.getElementById('island-drawer').classList.contains('translate-x-[460px]')) {
+        return;
+      }
+
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+
+      const targets = Object.values(islandMeshes).concat(infoBoxes).concat(humanGroup.children);
+      const intersects = raycaster.intersectObjects(targets, true);
+
+      if (intersects.length > 0) {
+        let hit = intersects[0].object;
+        let foundId = null;
+
+        while (hit && hit !== scene) {
+          if (hit.userData && hit.userData.islandId) {
+            foundId = hit.userData.islandId;
+            break;
+          }
+          if (hit.userData && hit.userData.id) {
+            foundId = hit.userData.id;
+            break;
+          }
+          hit = hit.parent;
+        }
+
+        if (foundId) {
+          focusIsland(foundId);
+        }
+      }
+    }
+
+    function focusIsland(id, animateCam = true) {
+      currentSelectedId = id;
+      const data = islandsData[id];
+      if (!data) return;
+
+      document.querySelectorAll('.dock-btn').forEach(btn => {
+        btn.classList.remove('bg-cyan-500/30', 'text-cyan-300', 'border-cyan-400');
+      });
+      const activeDock = document.getElementById(`dock-${id}`);
+      if (activeDock) {
+        activeDock.classList.add('bg-cyan-500/30', 'text-cyan-300', 'border-cyan-400');
+      }
+
+      const targetPos = new THREE.Vector3(data.pos.x, 1.6, data.pos.z);
+      const camOffset = (id === 'ID00')
+        ? new THREE.Vector3(0, 16, 20)
+        : new THREE.Vector3(data.pos.x * 0.45, 12, data.pos.z * 0.45 + 14);
+
+      if (animateCam) {
+        new TWEEN.Tween(camera.position)
+          .to({ x: data.pos.x + camOffset.x, y: camOffset.y, z: data.pos.z + camOffset.z }, 800)
+          .easing(TWEEN.Easing.Cubic.Out)
+          .start();
+
+        new TWEEN.Tween(controls.target)
+          .to({ x: targetPos.x, y: targetPos.y, z: targetPos.z }, 800)
+          .easing(TWEEN.Easing.Cubic.Out)
+          .start();
+      } else {
+        camera.position.set(data.pos.x + camOffset.x, camOffset.y, data.pos.z + camOffset.z);
+        controls.target.copy(targetPos);
+      }
+
+      openDrawer(id);
+    }
+
+    function resetCameraView() {
+      new TWEEN.Tween(camera.position)
+        .to({ x: 0, y: 28, z: 32 }, 800)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .start();
+
+      new TWEEN.Tween(controls.target)
+        .to({ x: 0, y: 1.2, z: 0 }, 800)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .start();
+
+      closeDrawer();
+    }
+
+    // ========================================================
+    // 7. 抽屜與 UI 互動渲染
+    // ========================================================
+    function openDrawer(id) {
+      const data = islandsData[id];
+      const drawer = document.getElementById('island-drawer');
+
+      const tag = document.getElementById('drawer-tag');
+      tag.innerText = data.tag;
+      tag.style.backgroundColor = data.colorHex;
+
+      document.getElementById('drawer-title').innerText = data.name;
+      document.getElementById('drawer-sub').innerText = data.subName;
+      document.getElementById('drawer-desc').innerText = data.desc;
+      document.getElementById('drawer-occupancy').innerText = `${data.workers.length} 位巡檢忙碌中`;
+
+      const statusBox = document.getElementById('drawer-status-box');
+      statusBox.style.borderColor = `${data.colorHex}77`;
+
+      const summary = data.workers.map(w => `
+        <div class="flex items-start gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style="background-color: ${data.colorHex}"></span>
+          <div><b class="text-white">${w.name}</b> (${w.role})：<span class="text-slate-300">${w.currentActivity}</span></div>
+        </div>
+      `).join('');
+      document.getElementById('drawer-activity-summary').innerHTML = summary;
+
+      const modContainer = document.getElementById('drawer-modules');
+      modContainer.innerHTML = data.modules.map(m => `
+        <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-700/80 shadow-xs hover:border-slate-500 transition">
+          <div class="text-xs font-black text-cyan-300 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full" style="background-color: ${data.colorHex}"></span>
+            ${m.title}
+          </div>
+          <div class="text-[11px] text-slate-400 mt-1 pl-3 leading-relaxed font-normal">${m.desc}</div>
+        </div>
+      `).join('');
+
+      const actionBtn = document.getElementById('drawer-action-btn');
+      actionBtn.style.backgroundColor = data.colorHex;
+
+      drawer.classList.remove('translate-x-[460px]');
+      lucide.createIcons();
+    }
+
+    function closeDrawer() {
+      document.getElementById('island-drawer').classList.add('translate-x-[460px]');
+    }
+
+    function executeIslandAction() {
+      if (currentSelectedId === 'ID00') {
+        toggleHITLModal();
+      } else {
+        alert(`【${islandsData[currentSelectedId].name}】指令已送達：現場 ${islandsData[currentSelectedId].workers.length} 位巡檢工程師已同步調用專屬 Agent 微服務！`);
+      }
+    }
+
+    function updateRosterUI() {
+      const container = document.getElementById('island-user-roster');
+      container.innerHTML = Object.keys(islandsData).map(id => {
+        const d = islandsData[id];
+        return `
+          <div onclick="focusIsland('${id}')" class="p-2.5 rounded-2xl bg-slate-900/70 hover:bg-slate-800 border border-slate-700/60 cursor-pointer transition flex items-center justify-between group">
+            <div class="flex items-center gap-2.5">
+              <span class="w-3.5 h-3.5 rounded-full border border-white/50" style="background-color: ${d.colorHex}"></span>
+              <div>
+                <span class="font-black text-slate-200 group-hover:text-cyan-300 transition text-xs">${d.name.split(' ')[0]}</span>
+                <span class="text-[10px] text-slate-400 font-bold block">${d.tag}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1 mono text-xs font-black text-cyan-300 bg-slate-950 px-2.5 py-0.5 rounded-lg border border-slate-800">
+              <i data-lucide="user-check" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>${d.workers.length}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function toggleHITLModal() {
+      document.getElementById('hitl-modal').classList.toggle('hidden');
+    }
+
+    function submitHITL(approved) {
+      toggleHITLModal();
+      if (approved) {
+        alert('【簽核核准】PIE 主任工程師已確認：Chamber ET03 後續批次已鎖定，Wafer #08 送檢 TEM 工單已開立！');
+      } else {
+        alert('【退回修正】處置建議已退回，已指派解析島重新採樣分析。');
+      }
+    }
+
+    function downloadWebpage() {
+      const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'PIE_Earth_Archipelago.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // ========================================================
+    // 8. 動畫主循環（慢速 3 倍太陽、地球自轉、大字方塊面對攝影機）
+    // ========================================================
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+      const elapsedTime = clock.getElapsedTime();
+      TWEEN.update();
+      controls.update();
+
+      // 地球星球微速自轉
+      if (earthMesh) {
+        earthMesh.rotation.y = elapsedTime * 0.015;
+      }
+
+      // 慢速 3 倍的小太陽公轉
+      if (sunMesh && sunMesh.parentGroup) {
+        const sunAngle = elapsedTime * sunOrbitSpeed;
+        const sunX = Math.cos(sunAngle) * sunOrbitRadius;
+        const sunZ = Math.sin(sunAngle) * sunOrbitRadius;
+        const sunY = 18.0 + Math.sin(sunAngle * 2.0) * 3.5;
+
+        sunMesh.parentGroup.position.set(sunX, sunY, sunZ);
+        sunLight.position.set(0, 0, 0);
+        sunLight.target.position.set(0, 1.5, 0);
+        scene.add(sunLight.target);
+
+        if (sunGlowRing) {
+          sunGlowRing.lookAt(camera.position);
+          sunGlowRing.rotation.z = elapsedTime * 0.2;
+        }
+
+        const deg = Math.round((sunAngle * 180 / Math.PI) % 360);
+        const statusEl = document.getElementById('sun-status');
+        if (statusEl) statusEl.innerText = `方位角 ${deg}° (慢速 0.11rad/s)`;
+      }
+
+      // 頭頂大字版說明方塊永遠面對攝影機（Billboard）與輕柔浮動
+      infoBoxes.forEach((box, i) => {
+        box.position.y = (box.userData.islandId === 'ID00' ? 7.6 : 6.4) + Math.sin(elapsedTime * 1.8 + i * 1.2) * 0.1;
+        box.lookAt(camera.position);
+      });
+
+      // 島嶼建築動態
+      Object.keys(islandMeshes).forEach(id => {
+        const island = islandMeshes[id];
+        if (island.userData.spinRing) island.userData.spinRing.rotation.z = elapsedTime * 0.35;
+        if (island.userData.radar) island.userData.radar.rotation.y = Math.sin(elapsedTime * 0.7) * 0.45;
+        if (island.userData.crystal) island.userData.crystal.rotation.y = elapsedTime * 0.5;
+      });
+
+      // 人員在島上走動裝忙巡邏
+      walkingWorkers.forEach(w => {
+        w.angle += w.patrolSpeed * delta * w.clockwise;
+        const px = w.centerX + Math.cos(w.angle) * w.patrolRadius;
+        const pz = w.centerZ + Math.sin(w.angle) * w.patrolRadius;
+
+        w.mesh.position.set(px, w.surfaceY, pz);
+
+        const facingAngle = w.angle + (w.clockwise > 0 ? Math.PI / 2 : -Math.PI / 2);
+        w.mesh.rotation.y = facingAngle;
+
+        const walkCycle = Math.sin(elapsedTime * 8.0 + w.walkSeed);
+        w.lLeg.rotation.x = walkCycle * 0.45;
+        w.rLeg.rotation.x = -walkCycle * 0.45;
+        w.lArm.rotation.x = -walkCycle * 0.35;
+        w.rArm.rotation.x = -Math.PI / 3 + walkCycle * 0.12;
+
+        w.mesh.position.y = w.surfaceY + Math.abs(Math.sin(elapsedTime * 8.0 + w.walkSeed)) * 0.04;
+        w.halo.rotation.z = elapsedTime * 1.5;
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      initThree();
+    });
+  </script>
+</body>
+</html>
